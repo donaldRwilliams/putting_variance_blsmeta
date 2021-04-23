@@ -1,0 +1,84 @@
+---
+title: "reproduce"
+author: "Donny Williams"
+date: "4/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# R Packages
+```{r}
+library(ggplot2)
+library(cowplot)
+library(dplyr)
+```
+# Figure 1
+
+```{r}
+dat_fit_1 <- read.csv("save_dat.csv")
+
+
+# bottom plot
+set.seed(1)
+bottom <- ggplot(data = dat_fit_1,
+                 mapping = aes(y = as.factor(id), x = eb, group = group)
+                 ) +
+  geom_vline(xintercept = -0.35, 
+             linetype = 'dotted', 
+             alpha = 0.5) +
+  geom_errorbar(mapping = aes(xmax = eb + sqrt(eb_var) * 1.96,  
+                              xmin = eb - sqrt(eb_var) * 1.96), 
+                color = "black", 
+                width = 0, size = 0.5) +
+  geom_point(aes(color = group), size = 2) +
+  theme_minimal() +
+  theme(plot.margin = margin(0, 5.5, 5.5, 5.5, "pt"), 
+        legend.position = "none", 
+        panel.grid= element_blank(), 
+        axis.text.y = element_blank()) +
+  scale_x_continuous(limits = c(-7, 7), 
+                     breaks = c(0, -2, -4, 2, 4), 
+                     labels = c(0, -0.5, -1, 0.5, 1)) +
+  ylab("Study") +
+  scale_color_manual(values = c( "#56B4E9", 
+                                 "#CC79A7")) +
+  xlab(expression(mu))
+bottom
+
+# top
+top <- ggplot(NULL, aes(c(-7, 7))) +
+ 
+  geom_area(stat = "function", 
+            args = list(sd = 0.5, mean = -0.07), 
+            fun = dnorm, 
+            color = "black",
+            fill = "#CC79A7",
+            xlim = c(-7, 7), 
+            alpha = 0.5)  + 
+  geom_area(stat = "function", 
+            alpha = 0.5, 
+            color = "black",
+            args = list(sd = 2,  mean = -0.07),
+            fun =  dnorm, 
+            fill ="#56B4E9") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0,0), 
+                     limits = c(0, 0.875)) +
+  theme_minimal() +
+  theme(plot.margin = margin(5.5, 5.5,0, 5.5, "pt"), 
+        legend.position = "none", 
+        axis.text.x = element_blank(),
+        axis.title = element_blank(), 
+        axis.ticks.x = element_blank(),  
+        panel.grid = element_blank(), 
+        axis.text.y = element_blank()) +
+   geom_hline(yintercept = 0,  color = "white", size = 0.25) 
+
+# combine
+plot_grid(top, bottom, 
+          nrow = 2, 
+          rel_heights = c(1.85, 5))
+```
