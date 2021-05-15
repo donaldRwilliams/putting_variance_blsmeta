@@ -14,45 +14,57 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(cowplot)
 library(dplyr)
+library(R2jags)
+library(blsmeta)
+library(ggridges)
 ```
-# Figure 1
 
+
+# Figure 1
 ```{r}
 dat_fit_1 <- read.csv("save_dat.csv")
 
 
+multiply <- seq(from = 0.50, to  = 1.25, length.out = 20)
+
+set.seed(1)
+multiply <- sample(multiply, replace = TRUE, size = 50)
+nrow(dat_fit_1)
+
 # bottom plot
 set.seed(1)
 bottom <- ggplot(data = dat_fit_1,
-                 mapping = aes(y = as.factor(id), x = eb, group = group)
+                 mapping = aes(y = as.factor(id), 
+                               x = eb, 
+                               group = group)
                  ) +
   geom_vline(xintercept = -0.35, 
              linetype = 'dotted', 
              alpha = 0.5) +
-  geom_errorbar(mapping = aes(xmax = eb + sqrt(eb_var) * 1.96,  
-                              xmin = eb - sqrt(eb_var) * 1.96), 
+  geom_errorbar(mapping = aes(xmax = eb + sqrt(eb_var) * multiply * 1.96,  
+                              xmin = eb - sqrt(eb_var)  * multiply * 1.96), 
                 color = "black", 
                 width = 0, size = 0.5) +
   geom_point(aes(color = group), size = 2) +
   theme_minimal() +
   theme(plot.margin = margin(0, 5.5, 5.5, 5.5, "pt"), 
         legend.position = "none", 
-        panel.grid= element_blank(), 
-        axis.text.y = element_blank()) +
+        panel.grid= element_blank()) +
   scale_x_continuous(limits = c(-7, 7), 
                      breaks = c(0, -2, -4, 2, 4), 
                      labels = c(0, -0.5, -1, 0.5, 1)) +
   ylab("Study") +
   scale_color_manual(values = c( "#56B4E9", 
                                  "#CC79A7")) +
-  xlab(expression(mu))
-bottom
+  xlab(expression(mu)) +
+  scale_y_discrete(labels = c(50, rep("", 48) , 1) )
+
 
 # top
 top <- ggplot(NULL, aes(c(-7, 7))) +
  
   geom_area(stat = "function", 
-            args = list(sd = 0.5, mean = -0.07), 
+            args = list(sd = 0.5, mean = .30), 
             fun = dnorm, 
             color = "black",
             fill = "#CC79A7",
@@ -61,7 +73,7 @@ top <- ggplot(NULL, aes(c(-7, 7))) +
   geom_area(stat = "function", 
             alpha = 0.5, 
             color = "black",
-            args = list(sd = 2,  mean = -0.07),
+            args = list(sd = 2,  mean = 0.30),
             fun =  dnorm, 
             fill ="#56B4E9") +
   scale_x_continuous(expand = c(0, 0)) +
@@ -78,7 +90,952 @@ top <- ggplot(NULL, aes(c(-7, 7))) +
    geom_hline(yintercept = 0,  color = "white", size = 0.25) 
 
 # combine
+figure_1 <-
 plot_grid(top, bottom, 
           nrow = 2, 
           rel_heights = c(1.85, 5))
+
+figure_1
+
+ggsave(figure_1, 
+       filename = "figure_1.pdf", 
+       width = 3.15, height = 4.5)
+```
+
+
+
+# Figure 2A (weights)
+
+```{r}
+# studies
+k <- 20
+
+# correlation with n = 50
+vi <- 1/(50 - 3)
+
+# proportion of k
+prop_k <- (k * seq(0.5, 0.9, by = 0.1))
+
+# grid
+gr <- expand.grid(seq(0.05, 1, by  = 0.01)^2, prop_k)
+
+
+ls <- list()
+
+
+for(i in seq_len(nrow(gr))){
+  
+  X <- c(rep(0, gr$Var2[i]), rep(1, k -gr$Var2[i]))
+  
+  tau2 <- ifelse(X == 0, 0.05^2, gr[i,1])
+  
+  true <- 1/(vi + tau2[1]) 
+  
+  mu <- 1/(vi + mean(tau2))
+  
+  ls[[i]] <- data.frame(
+    y = c(true, mu), 
+    est = c("true", "mu"), 
+    prop = gr$Var2[i] / k, 
+    sd = gr$Var1[i])
+}
+
+dat_plot <-
+  do.call(rbind.data.frame, ls) %>%
+  mutate(prop2 = factor(prop)) %>%
+  mutate(prop2 = factor(prop2, levels = rev(levels(prop2)))) 
+  
+figure_2A <-
+ggplot(dat_plot %>% filter(est == "mu"), 
+         aes(x = sd, 
+             y = y,  
+             color = as.factor(prop2))) + 
+   geom_vline(xintercept = 0.05^2, linetype = "dotted", alpha = 0.5) +  
+  geom_line(size = 1) +
+    geom_line(inherit.aes = FALSE, 
+              data = dat_plot %>% 
+              filter(est == "true"), 
+              aes(x = sd, y =y,  
+                  group = as.factor(prop2)), size = 2) +
+    scale_x_continuous(limits = c(0, 1), 
+                       breaks = seq(0, 1, 0.25)) +
+    theme_bw() +
+    theme(legend.text.align = -1.1, 
+          panel.grid.minor = element_blank(), 
+          panel.grid.major = element_line(color = "grey97")) +
+  scale_color_manual(
+    name = expression(italic(k)~ paste("\u003D 20")),
+    labels = c(
+      expression(italic(k)[g1]~"="~italic(k)*0.9),
+      expression(italic(k)[g1]~"="~italic(k)*0.8),
+      expression(italic(k)[g1]~"="~italic(k)*0.7),
+      expression(italic(k)[g1]~"="~italic(k)*0.6),
+      expression(italic(k)[g1]~"="~italic(k)*0.5)
+    ),
+    values = c("#999999", "#CC79A7", "#F0E442",
+               "#D55E00", "#0072B2")
+  ) +
+  ylab(expression("Random-Effects Weight")) +
+  annotate(
+    geom = "text",
+    x = 0.85,
+    y = 38,
+    label = "True",
+    size = 5
+  ) +
+  annotate(geom = "text", label = expression(tau[g1]^2), y = 4, x = .25^2)+
+  xlab(expression(tau[g2]^2)) 
+ 
+figure_2A
+```
+
+
+# Figure 2B (power)
+
+```{r}
+k <- seq(4, 60, 4)
+tau2_true <- c(0.25, 0.45)^2
+ls_fixed <- ls_varying <- list()
+
+
+for(i in 1:2){
+  res <- sapply(1:length(k), function(x){
+    X <- c(rep(0, k[x]*0.5), rep(1,k[x]*0.5))
+    tau2 <- ifelse(X == 0, 0.10^2, tau2_true[i])
+
+res <- blsmeta:::pwr_lsmeta(
+  true_effect = 0.1,
+  n = rep(50, k[x]),
+  tau =  mean(tau2),
+  alpha = 0.05)
+
+})
+  ls_fixed[[i]] <- data.frame(pwr = res, 
+                              k = k, 
+                              taus = tau2_true[i], 
+                              type = "fixed")
+}
+
+
+for(i in 1:2){
+  res <- sapply(1:length(k), function(x){
+    X <- c(rep(0, k[x]*0.5), rep(1,k[x]*0.5))
+    tau2 <- ifelse(X == 0, 0.10^2, tau2_true[i])
+    
+    res <- blsmeta:::pwr_lsmeta(
+      true_effect = 0.1,
+      n = rep(50, k[x]),
+      tau =  tau2,
+      alpha = 0.05)
+    
+  })
+  ls_varying[[i]] <- data.frame(pwr = res, 
+                              k = k, 
+                              taus = tau2_true[i], 
+                              type = "varying")
+}
+
+
+res <-  rbind.data.frame(do.call(rbind.data.frame, ls_fixed), 
+                         do.call(rbind.data.frame, ls_varying))
+
+res_f <- res %>% filter(type == "fixed")
+res_f$new <- paste0(res_f$type, "_", res_f$taus)
+res_v <- res %>% filter(type == "varying")
+res_v$new <- paste0(res_v$type, "_", res_v$taus)
+
+figure_2B <-
+rbind.data.frame(res_f, res_v) %>%
+filter(new %in% c( "varying_0.2025", "fixed_0.2025")) %>%
+ggplot(aes(x = as.factor(k), y= pwr, group = new, fill = new)) +
+geom_bar(stat = "identity", 
+         position = position_dodge(0.80), 
+         show.legend = TRUE, width = 0.80) +
+coord_flip() +
+theme_bw() +
+ theme(legend.text.align = -0.5,
+          panel.grid.minor = element_blank(),
+          # panel.grid.major.y = element_blank(),
+          panel.grid.major = element_line(color = "grey97")) +
+scale_y_continuous(expand = c(0, 0), limits = c(0, 1.05)) + 
+scale_fill_manual(values = c( "#E69F00", "#009E73"), 
+                  labels = c("Constant", " Varying"), name = expression(tau^2)) +
+xlab(expression( "Number of Studies"~"("*italic(k)*")"))+
+ylab("Power") 
+
+figure_2B  
+figure_2 <- 
+plot_grid(figure_2A, NULL, figure_2B, 
+          nrow = 1, rel_widths = c(1.025, 0.15, 1), 
+          labels = c("A", "B"), label_size = 14)
+
+figure_2
+ggsave(figure_2, filename = "plot2.pdf", width = 8.5, height = 2.75)
+
+```
+
+
+# Figure 3A (observed)
+```{r}
+dat <- blsmeta::dat_gnambs2020
+set.seed(1)
+dat <- dat %>% group_by(study_id) %>% sample_n(1)
+
+
+
+figure_3a <- 
+ggplot(dat, aes(x = n, 
+                y = yi, fill = "Observed")) +
+  geom_hline(yintercept =  -0.07, 
+             linetype = "dotted", 
+             alpha = 0.5) +
+  geom_point(size = 2, alpha = 0.5) +
+  theme_bw() +
+  theme(panel.grid = element_blank(), 
+        legend.title = element_blank(), 
+        legend.position = "top") +
+  ylab(expression("Observed Effects"~"("*italic(y)[i]*")")) +
+  xlab("Sample Size") +
+  scale_y_continuous(limits = c(-2, 1), 
+                     breaks = seq(-2, 1, 0.5)) +
+  scale_x_continuous(breaks = seq(50, 300, 50)) +
+  scale_fill_manual(values = "transparent",  labels = "") +
+ guides(fill = guide_legend(override.aes = list(alpha=0)))
+figure_3a
+
+```
+
+
+# Figure 3B (uncertainty)
+```{r}
+# fit models
+fit_varying <- blsmeta(yi, vi, mod_tau_2 = ~ I(n - 20), data = dat)
+fit_fixed <- blsmeta(yi, vi, mod_tau_2 = ~ 1, data = dat)
+
+blup_varying <- coef(fit_varying, cred = 0.90)
+blup_fixed <- coef(fit_fixed, cred = 0.90)
+
+blup_fixed$model <- "fixed"
+blup_varying$model <- "varying"
+
+blup_fixed$n <- dat$n
+blup_varying$n <- dat$n
+blup_varying$id <- 1:22
+blup_fixed$id <- 1:22
+blup_varying <- blup_varying %>% 
+  arrange(Post.mean) %>%
+  mutate(idnew = as.factor(1:22))
+
+
+blup_fixed <- blup_fixed[order(blup_varying$id),]
+blup_fixed$idnew <- 1:22
+
+datpoints <- dat[,c("yi")]
+datpoints$pred <-datpoints$yi
+datpoints <- datpoints[blup_varying$id,]
+datpoints$idnew <- 1:22
+datpoints$pred <- datpoints$yi
+
+figure_3b <- 
+rbind.data.frame(blup_varying, blup_fixed) %>% 
+  ggplot(aes(x = as.factor(idnew), 
+             y = Post.mean, 
+             group = model)) +
+  geom_hline(yintercept = 0, 
+             linetype = "dotted", alpha = 0.5) +
+  
+    geom_errorbar(aes(ymin = Cred.lb, ymax = Cred.ub), 
+                position = position_dodge(1), 
+                width = 0) +
+  geom_point(position = position_dodge(1), 
+             aes(color = model), size = 2) +
+  geom_point(inherit.aes = FALSE, 
+             data = datpoints, 
+             aes(y =  pred, x = idnew), 
+             shape = 16, 
+             size = 2, alpha = 0.25) +
+ 
+  theme_bw() +
+  theme(legend.position = "top", panel.grid = element_blank()) +
+  ylab(expression("Random Effects"~"("*theta[i]*")")) +
+  xlab("Ordered Study") +
+  scale_y_continuous(limits = c(-2, 1), 
+                     breaks = seq(-2,1, 0.5)) +
+  scale_color_manual(name = expression(tau^2), values = c("#CC79A7","#0072B2"), 
+                     labels = c("Constant", "Varying" )) +
+  scale_x_discrete(labels = c("1", rep("", 20), "22"))
+
+
+dummy_dat <- data.frame(x = "g", y =1)
+
+dummy_plot <- ggplot(dummy_dat, aes(x = x, y = y, color = x)) +
+  geom_point(shape = 16, 
+             size = 2, alpha = 0.25) +
+  theme_bw() +
+  theme(legend.position = "top") +
+  scale_color_manual(values = "black", name = "", labels = "Observed")
+
+
+leg <- cowplot::plot_grid(
+cowplot::get_legend(dummy_plot), cowplot::get_legend(figure_3b)
+# test_plt + theme(legend.position = "none")
+)
+
+figure_3b <- cowplot::plot_grid(leg, figure_3b + 
+                    theme(legend.position = "none"), 
+                   nrow = 2, 
+                   rel_heights = c(1, 10))
+
+figure_3top <- cowplot::plot_grid(figure_3a, NULL, figure_3b, 
+                                  nrow = 1, rel_widths = c(1,0.15, 1.35))
+
+
+```
+
+
+# Figure 3C (BlUPS vs Observed)
+```{r}
+blup_varying <- coef(fit_varying, cred = 0.90)
+blup_fixed <- coef(fit_fixed, cred = 0.90)
+
+
+
+
+blup_fixed$id <- 1:22
+blup_varying$id <- 1:22
+blup_fixed$x <- -1
+blup_varying$x <- 1
+
+d <- data.frame(facet = paste(expression(tau^2~" Constant")))
+# 
+plot_fixed <-
+ggplot(d) +
+  annotate(geom = "segment", x = 1,
+           xend = 0, 
+           y =  blup_fixed$Post.mean, alpha = 0.35,
+           yend = dat$yi)  +
+  annotate(geom = "point", x = 1 , y = blup_fixed$Post.mean, 
+           size = 3, color = "#E69F00", alpha = 0.5, ) +
+facet_grid(~ facet, labeller = label_parsed) +
+
+annotate(geom = "point", x = 0, dat$yi, size = 3, alpha = 0.5)  +
+
+
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(), 
+        strip.background = element_rect(fill = "grey97")) +
+  ylab("Estimates") + 
+  xlab("") +
+  scale_x_continuous(breaks = c(0, 1))
+
+plot_fixed
+
+d2 <- data.frame(facet = paste(expression(tau^2~" Varying")))
+# 
+plot_varying  <-
+  ggplot(d2) +
+  annotate(geom = "segment", x = 1,
+           xend = 0, 
+           y =  blup_varying$Post.mean, alpha = 0.35,
+           yend = dat$yi)  +
+  annotate(geom = "point", x = 1 , y = blup_varying$Post.mean, 
+           size = 3, color = "#E69F00", alpha = 0.5, ) +
+  facet_grid(~ facet, labeller = label_parsed) +
+  
+  annotate(geom = "point", x = 0, dat$yi, size = 3, alpha = 0.5)  +
+  
+  
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(), 
+        strip.background = element_rect(fill = "grey97")) +
+  ylab("") + 
+  xlab("") +
+  scale_x_continuous(breaks = c(0, 1))
+
+
+
+plot_varying
+
+dummydat <- data.frame(group = c("Observed", "Random Effect"),  y = c(1, 2))
+
+dummy_plot <-
+ggplot(dummydat, aes(x = group, color = group, y = y)) +
+  geom_point(size  =2) +
+  theme_bw() +
+  theme(title = element_blank(),
+        legend.position = "top") +
+  scale_color_manual(values = c("black", "#E69F00"), 
+                     label = c(expression("Observed"~"("*italic(y)[i]*")"),expression( "Random Effect"~"("*theta[i]*")" )))
+
+dummy_plot
+leg <- cowplot::get_legend(dummy_plot)
+
+figure_3c <-
+plot_grid(leg,
+plot_grid(plot_fixed, plot_varying, align = "hv"),
+nrow = 2, rel_heights = c(1,10))
+
+figure_3c
+```
+
+
+# Figure 3D (predicted tau)
+```{r}
+newdata <- data.frame(n =  seq(40, 300, 1) )
+fit_fixed <- blsmeta(yi, vi, mod_tau_2 = ~ 1, data = dat)
+# fit_varying <- blsmeta(yi, vi, mod_tau_2 = ~ I(n - 20), data = dat)
+# fit_fixed <- blsmeta(yi, vi, mod_tau_2 = ~ 1, data = dat)
+
+tau_pred_varying <- tau(fit_varying, 
+                mod_tau_2 = ~ I(n - 20) , 
+                data = newdata, 
+                cred = 0.90, 
+                summary = TRUE)
+
+tau_pred_fixed <- tau(fit_fixed, 
+                        mod_tau_2 = ~ 1, 
+                        data = newdata, 
+                        cred = 0.90, 
+                        summary = TRUE)
+
+
+
+tau_pred_varying$n <- newdata$n
+tau_pred_fixed$n <- newdata$n
+tau_pred_varying$model <- "Varying"
+tau_pred_fixed$model <- "Constant"
+
+
+figure_3D <- rbind.data.frame(tau_pred_fixed, tau_pred_varying) %>%
+  ggplot(aes(x = n, y = Post.mean, group = model)) +
+  geom_ribbon(aes(ymax = Cred.lb, ymin = Cred.ub, fill = model), alpha = 0.5) +
+  geom_line(alpha = 0.6, linetype = "dotted")  + 
+  scale_x_continuous(breaks = seq(50, 300, 50)) +
+  xlab("Sample Size") +
+  ylab(expression("Predicted Heterogeneity"~"("*hat(tau)*")")) +
+ theme_bw() +
+  theme(panel.grid = element_blank(), legend.position = "top") +
+  scale_fill_manual(name = "", values = c("#CC79A7","#0072B2"), 
+                     labels = c("Constant", "Varying" )) +
+  guides(fill = guide_legend(override.aes= list(alpha = 1)))
+figure_3D
+
+
+```
+
+
+# Figure 3 Shrinkage
+```{r}
+newdata <- data.frame(n =  seq(40, 300, 1) )
+tau_pred_fixed <- tau(fit_fixed, mod_tau_2 = ~ 1, 
+                      data = newdata, 
+                      cred = 0.90, 
+                      summary = FALSE)
+
+
+tau_pred <- tau(fit_varying, 
+                mod_tau_2 = ~ I(n - 20) , 
+                data = newdata, 
+                cred = 0.90, 
+                summary = FALSE)
+
+
+tau2_pred <- tau_pred^2
+tau2_pred_fixed <- tau_pred_fixed^2
+
+
+vars <- 1/ (newdata$n - 3)
+
+sf_varying <- 
+sapply(1:length(vars), function(x) {
+blsmeta:::plug_in_sf(vars[x], tau2_pred[,x])
+})
+
+sf_fixed <- 
+  sapply(1:length(vars), function(x) {
+    blsmeta:::plug_in_sf(vars[x], tau2_pred_fixed[,x])
+  })
+
+dat_varying <- data.frame(mu = colMeans(sf_varying), 
+                          n = newdata$n, model = "Varying")
+dat_fixed <- data.frame(mu = colMeans(sf_fixed), n = newdata$n, model = "Constant")
+
+figure_3e <-
+rbind.data.frame(dat_varying, dat_fixed) %>%
+ggplot(aes(x = n, y = mu)) +
+  geom_line(aes(color = model), size = 2) +
+  scale_y_continuous(limits = c(0, 1), 
+                     breaks = c(0, 0.25, 0.50, 0.75, 1), 
+                     labels = c("Complete\nShrinkage", "", "", "", "No\nShrinkage")) +
+  scale_x_continuous(breaks = seq(50, 300, 50)) +
+  ylab(expression("Shrinkage Factor"~"("*lambda*")")) +
+   theme_bw() +
+  theme(panel.grid = element_blank(), legend.position = "top", axis.text.y = element_text(angle = 90, vjust = 1, hjust=0.5)) +
+  scale_color_manual(name = expression(tau^2), values = c("#CC79A7","#0072B2"), 
+                     labels = c("Constant", "Varying" )) +
+  xlab("Sample Size")
+  
+
+
+side_plots <- cowplot::plot_grid(figure_3e, 
+                                 figure_3D + 
+                                   theme(legend.position = "none"), 
+                                 nrow = 2, rel_heights = c(1.15,1))
+side_plots
+
+
+bottom <- cowplot::plot_grid(figure_3c, NULL, side_plots, nrow = 1, rel_widths = c(1.5, 0.15, 1))
+
+
+
+
+figure_3 <- cowplot::plot_grid(figure_3top, NULL,  
+                   bottom, nrow = 3,rel_heights = c(1, 0.15, 2))
+
+ggsave(filename = "figure_3_new.pdf", width = 8.5, height = 9)
+
+```
+
+
+
+# Example 2
+# Figure 4 (observed) A
+
+```{r}
+set.seed(1)
+dat  <- pred_country %>% 
+  group_by(studyid2) %>% 
+  sample_n(1)
+
+
+
+sds <- with(dat, tapply(lrr_best, country, sd ))
+
+dat$country_new <- factor(dat$country, 
+                          levels = names(sds)[order(sds)], 
+                          labels =  names(sds)[order(sds)])
+
+set.seed(1)
+figure_4a <- ggplot(dat, 
+       aes(x = country_new, 
+           y = exp(lrr_best))) +
+  geom_hline(yintercept = 1, 
+             linetype = "dotted", 
+             alpha = 0.5) +
+  geom_jitter(width = 0.1, 
+              height = 0, 
+              size = 2, 
+              alpha = 0.5) +
+  theme_bw() +
+  ylab(expression("Observed Effects"~"("*italic(y)[i]*")")) +
+  xlab("Country") +
+  theme(panel.grid.minor = element_blank(), 
+        panel.grid.major = element_line(color = "grey97")) 
+```
+
+
+# Fit models
+```{r}
+datnew <- na.omit(dat[,c("lrr_best", "rr_best_lnvar", "country", "p_immig")])
+
+fit_constant <- blsmeta(yi = lrr_best, 
+                  vi = rr_best_lnvar, 
+                  mod = ~ country, 
+                  data = datnew, 
+                  iter = 25000,
+                  save_ranef = FALSE)
+
+fit_constant_mod <- blsmeta(yi = lrr_best, 
+                  vi = rr_best_lnvar, 
+                  mod = ~ country + p_immig, 
+                  data = datnew,  
+                  iter = 25000,  
+                  save_ranef = FALSE)
+
+fit_m1 <- blsmeta(yi = lrr_best, 
+                  vi = rr_best_lnvar, 
+                  mod = ~ country,
+                  mod_tau_2 = ~ country, 
+                  data = datnew, 
+                  iter = 25000,  
+                  save_ranef = FALSE)
+
+fit_m2 <- blsmeta(yi = lrr_best, 
+                  vi = rr_best_lnvar, 
+                  mod = ~ country + p_immig,
+                  mod_tau_2 = ~ country, 
+                  data = datnew, 
+                  iter = 25000,  
+                  save_ranef = FALSE)
+```
+
+
+
+# Figure 4b (tau)
+```{r}
+tau_varying <- tau(fit_m1, summary = TRUE)
+tau_fixed <-   tau(fit_constant, summary = TRUE)
+
+
+tau_varying$con <- datnew$country
+tau_fixed$con <- "Constant"
+tau_varying <- tau_varying %>% group_by(con) %>% sample_n(1)
+
+tau_dat <- rbind.data.frame(tau_varying, tau_fixed[1,])
+
+levs <- c(tau_varying$con[order(tau_varying$Post.mean)], "Constant")
+
+tau_dat$con_new <- factor(tau_dat$con, levels = levs)
+tau_dat$group <- ifelse(tau_dat$con_new == "Constant", "Constant", "Varying")
+
+figure_4B <-
+ggplot(tau_dat, aes(x = Post.mean, 
+                    y = con_new)) +
+   geom_errorbar(aes(xmax = Cred.ub, 
+                    xmin = Cred.lb), 
+                 width = 0) +
+  geom_point(aes(color = group), size = 2) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(), 
+        panel.grid.major = element_line(color = "grey97"), 
+        legend.position = "top", 
+        axis.title.y = element_blank()) +
+ scale_color_manual(name = expression(tau^2), 
+                      values = c("#CC79A7","#0072B2"), 
+                      labels = c("Constant", "Varying" )) +
+scale_y_discrete(labels = c(levs[1:9], expression("Constant"~" "*tau^2*""))) +
+  scale_x_continuous(limits = c(0, 0.6)) +
+  xlab(expression(tau))
+
+figure_4B
+```
+
+# Figure 4c (I2)
+```{r}
+# typical by country
+s2s <- with(datnew, tapply(rr_best_lnvar, country, blsmeta:::s2_helper ))
+
+I2_s2_varying <- as.data.frame(
+  
+sapply(1:length(s2s), function(x){
+    
+    i2 <- 
+  as.data.frame(
+  bayes_I2(fit_m1, v = s2s[x])
+  )
+
+colnames(i2) <- datnew$country
+
+i2[,which(colnames(i2) == names(s2s[x]))[1]]
+
+})
+)
+
+colnames(I2_s2_varying) <- names(s2s)
+
+
+
+# summary of varying
+dat_varying <- data.frame(mu = 
+colMeans( I2_s2_varying),
+sd = apply(I2_s2_varying, 2, sd),
+t(apply(I2_s2_varying, 2, quantile, c(0.05, 0.95)))
+)
+dat_varying
+
+I2_constant <-  bayes_I2(fit_constant, summary = TRUE)
+# I2_varying  <- bayes_I2(fit_m1, summary = TRUE)
+
+
+colnames( dat_varying) <- colnames(I2_constant)
+
+I2_varying <- dat_varying
+I2_varying$con <- names(s2s)
+
+# I2_varying$con <- dat$country
+
+I2_constant$con <- datnew$country
+
+I2_varying$group <- "Varying"
+I2_constant$group <- "Fixed"
+
+I2_varying <- I2_varying %>% group_by(con) %>% sample_n(1)
+I2_constant <- I2_constant %>% group_by(con) %>% sample_n(1) %>% .[1,]
+
+I2_constant$con <- "Belgium2"
+
+dat_new <- 
+rbind.data.frame(I2_varying, 
+               I2_constant) 
+  
+levs <- dat_new$con[order(dat_new$Post.mean)]
+levs <- c(levs[1:8], "Sweden",  "Belgium2")
+# levs
+
+dat_new$connew <- factor(dat_new$con, 
+                         levels = levs, 
+                         labels = levs)
+
+levs2 <- c(levs[1:9], expression("Constant"~" "*tau^2*""))
+
+figure_4C <-
+ggplot(dat_new, aes(x = connew, 
+           y= Post.mean, 
+           group = group)) +
+
+  coord_flip() +
+  geom_errorbar(aes(ymax = Cred.ub, ymin = Cred.lb), 
+                width = 0) +
+    geom_point(aes(color = group),
+               size = 2) +
+  scale_x_discrete(labels = (c(levs2))) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(), 
+        panel.grid.major = element_line(color = "grey97"), 
+        legend.position = "top") +
+  ylab(expression(italic(I)^2)) +
+   scale_color_manual(name = expression(tau^2), 
+                      values = c("#CC79A7","#0072B2"), 
+                      labels = c("Constant", "Varying" )) +
+  xlab("") 
+
+figure_4C
+```
+
+
+# Figure 4 (top)
+
+```{r}
+figure_4_top <-
+plot_grid(
+  plot_grid(NULL, NULL, get_legend(figure_4B), nrow = 1, rel_widths = c(1,1,2.5)), 
+plot_grid(
+figure_4a + xlab("") + coord_flip(),
+figure_4B + theme(legend.position = "none"),
+figure_4C + theme(legend.position = "none"), nrow = 1, align = "hv"
+),nrow = 2, rel_heights = c(1, 10)
+)
+
+
+```
+
+
+
+Figure 4d (R2)
+```{r}
+r2 <-  pseudo_R2(fit_re = fit_m1, 
+                 fit_me = fit_m2)
+
+r2_constant <-  pseudo_R2(fit_re = fit_constant, 
+                          fit_me = fit_constant_mod)
+
+r2$con <- datnew$country
+r2_constant$con <- "Constant"
+
+r2 <-  r2 %>% group_by(con) %>% sample_n(1) %>% arrange(desc(psuedo_R2)) %>%
+   mutate(psuedo_R2 = ifelse(psuedo_R2 < 0, 0, psuedo_R2))
+
+
+r2_new <- rbind.data.frame(r2, r2_constant[1,])
+
+levs <- c(r2$con[order(r2$psuedo_R2)], "Constant")
+
+levs2 <- c(levs[1:9], expression("Constant"~" "*tau^2*""))
+
+r2_new$con_new <- factor(r2_new$con, levels =  levs)
+r2_new$group <- ifelse(r2_new$con_new == "Constant", "Constant", "Varying")
+
+figure_4f <-
+ggplot(r2_new, aes(x =  psuedo_R2, 
+                   y = con_new)) +
+  geom_linerange(aes(y = con_new, 
+                     xmin = 0, 
+                     xmax =psuedo_R2), 
+                   position = position_dodge(width = 1)) +
+  geom_point(size = 2, aes(color = group)) +
+  xlab(expression("Pseudo"~R^2)) +
+  # scale_x_continuous(limits = c(0, 0.55), 
+  #                    breaks = seq(0, 0.5, 0.1)) +
+theme_bw() + 
+  theme(panel.grid.minor = element_blank(), 
+        panel.grid.major = element_line(color = "grey97"), 
+        legend.position = "top", axis.title.y = element_blank()) +
+  scale_color_manual(name = expression(tau^2), 
+                      values = c("#CC79A7","#0072B2"), 
+                      labels = c("Constant", "Varying" )) +
+  scale_y_discrete(labels = levs2) +
+  guides(color = guide_legend(override.aes = list(size = 2) ) )
+
+figure_4f
+
+```
+
+
+```{r}
+betas1 <- blsmeta:::extract_beta(blsmeta:::extract_samples(fit_m2), 
+                                 fit_m2$mean_X)
+
+betas2 <- blsmeta:::extract_beta(blsmeta:::extract_samples(fit_constant_mod), 
+                                 fit_constant_mod$mean_X)
+
+
+
+library(ggplot2)
+library(dplyr)
+
+cri_v <-quantile(  betas1[,10], probs = c(0.05, 0.95))
+cri_c <-quantile(  betas2[,10], probs = c(0.05, 0.95))
+mu_v <- mean(betas1[,10])
+mu_c <- mean(betas2[,10])
+
+figure_4e <- 
+  rbind.data.frame(
+data.frame(y = betas1[,10], model = "Varying"),
+data.frame(y = betas2[,10], model = "Constant")
+) %>% 
+  ggplot( aes(y = model, x= y, fill = model)) +
+  geom_vline(xintercept = 0, alpha = 0.25, linetype = "dotted") +
+  geom_density_ridges( alpha = 0.5, scale = 1, rel_min_height = 0.01) +
+  scale_fill_manual(name = expression(tau^2~" "), 
+                     values = c("#CC79A7","#0072B2"), 
+                     labels = c("Constant", "Varying" )) +
+  theme_minimal() +
+  theme(panel.grid.major  = element_line(color = "grey97"),
+        panel.grid.minor   = element_blank(),
+         axis.text.y = element_blank(),
+        legend.position = "top", axis.title.y = element_blank() ) +
+  xlab(expression("Posterior Distribution"~"("*italic(beta)[9]*")")) +
+  
+
+
+  annotate("point", x = mu_c, y = 1.05, size = 5, shape = 17) +
+  annotate("point", x = mu_c, y = 1.05, size = 4, shape = 17, color = "white") +
+  annotate("segment", y = 1, yend = 1, x = cri_c[1], xend = cri_c[2], size = 2) +
+  annotate("point", x = mu_v, y = 2.05, size = 5, shape = 17) +
+  annotate("point", x = mu_v, y = 2.05, size = 4, shape = 17, color = "white") +
+  annotate("segment", y = 2, yend =2, x = cri_v[1], xend = cri_v[2], size = 2) +
+  scale_y_discrete(expand = c(0.15, 0)) +
+  guides(fill = guide_legend(override.aes = list(alpha = 1) ) )  +
+  scale_x_continuous(limits = c(-1, 2.5))
+
+figure_4e  
+
+```
+
+# combine E and F
+
+```{r}
+
+bottom_right <- 
+plot_grid(figure_4e + theme(legend.position = "none"), 
+          NULL, 
+          figure_4f + theme(legend.position = "none"), 
+          nrow = 3, 
+          align = "v", 
+          rel_heights = c(1, 0.15, 1.5))
+
+```
+
+
+Figure 4d (predictive)
+```{r}
+con_names <- unique(datnew$country)
+pred_varying <-  as.data.frame(
+  predict(fit_m1, mod = ~ country, mod_tau_2 = ~ country, data = datnew)
+)
+
+colnames( pred_varying  ) <- datnew$country
+
+
+pred_varying <- 
+as.data.frame(
+  sapply(1:9, function(x){
+pred_varying[,which(colnames(pred_varying) == con_names[x])[1]]
+  
+}))
+
+colnames(pred_varying) <- con_names
+
+
+pred_constant <-  as.data.frame(
+  predict(fit_constant, mod = ~ country, mod_tau_2 = ~ 1, data = datnew)
+)
+
+colnames( pred_constant  ) <- datnew$country
+
+
+pred_constant <- 
+  as.data.frame(
+  sapply(1:9, function(x){
+    pred_constant[,which(colnames(pred_constant) == con_names[x])[1]]
+  
+}))
+
+colnames(pred_constant) <- con_names
+
+
+pred_constant <- 
+data.frame(mu = colMeans(pred_constant),
+ t(apply(pred_constant, 2,quantile, c(0.05, 0.95))),
+ model = "Constant"
+)
+
+pred_varying <- data.frame(mu = colMeans(pred_varying),
+ t(apply(pred_varying, 2,quantile, c(0.05, 0.95))),
+ model = "Varying"
+)
+
+pred_varying$con <- con_names
+pred_constant$con <- con_names
+
+
+pred_constant$con <- factor(pred_constant$con,  levels = pred_varying$con[order(pred_varying$mu)])
+pred_varying$con <- factor(pred_varying$con,  levels = pred_varying$con[order(pred_varying$mu)])
+
+
+figure_4d <-
+rbind.data.frame(pred_varying, pred_constant) %>%
+  ggplot(aes(x = con, y = mu, group = model)) +
+  geom_hline(yintercept = 0, linetype = "dotted", alpha = 0.5) +
+  geom_errorbar(aes(ymin = X5., ymax = X95.), 
+                width = 0, position = position_dodge(0.35)) + 
+  geom_point(aes(color = model), 
+             position = position_dodge(0.35), size = 2) +
+theme_bw() + 
+  theme(panel.grid.minor = element_blank(), 
+        panel.grid.major = element_line(color = "grey97"), 
+        legend.position = "top") +
+  scale_color_manual(name = expression(tau^2), 
+                      values = c("#CC79A7","#0072B2"), 
+                      labels = c("Constant", "Varying" )) +
+  # theme(axis.text.y = element_text(angle = 45, vjust = 1, hjust=1)) +
+  ylab(expression("Predictive Distribution"~"("*italic(theta)[new]*")")) +
+  xlab("")
+
+figure_4d
+```
+
+
+```{r}
+
+figure_4_bottom <- 
+plot_grid(get_legend(figure_4d),
+plot_grid(NULL, figure_4d + coord_flip() + theme(legend.position = "none"),
+          NULL,
+          bottom_right, NULL, nrow = 1, rel_widths = c(0.15, 1, 0.25, 1, 0.15)), 
+nrow = 2, 
+rel_heights = c(1, 10))
+
+```
+
+
+# figure 4 top + bottom
+
+```{r}
+plot_grid(figure_4_top, NULL, 
+          figure_4_bottom, 
+          nrow = 3, 
+          rel_heights = c(1, 0.15, 1.35))
 ```

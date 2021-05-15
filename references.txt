@@ -1,0 +1,244 @@
+@article{hagger2016multilab,
+  title={A multilab preregistered replication of the ego-depletion effect},
+  author={Hagger, Martin S and Chatzisarantis, Nikos LD and Alberts, Hugo and Anggono, Calvin O and Batailler, Cedric and Birt, Angela R and Brand, Ralf and Brandt, Mark J and Brewer, Gene and Bruyneel, Sabrina and others},
+  journal={Perspectives on Psychological Science},
+  volume={11},
+  number={4},
+  pages={546--573},
+  year={2016},
+  publisher={Sage Publications Sage CA: Los Angeles, CA}
+}
+
+@article{van2021systematic,
+  title={A systematic review and meta-analysis of psychological interventions to improve mental wellbeing},
+  author={van Agteren, Joep and Iasiello, Matthew and Lo, Laura and Bartholomaeus, Jonathan and Kopsaftis, Zoe and Carey, Marissa and Kyrios, Michael},
+  journal={Nature Human Behaviour},
+  pages={1--22},
+  year={2021},
+  publisher={Nature Publishing Group}
+}
+
+@article{klein2018many,
+  title={Many Labs 2: Investigating variation in replicability across samples and settings},
+  author={Klein, Richard A and Vianello, Michelangelo and Hasselman, Fred and Adams, Byron G and Adams Jr, Reginald B and Alper, Sinan and Aveyard, Mark and Axt, Jordan R and Babalola, Mayowa T and Bahn{\'\i}k, {\v{S}}t{\v{e}}p{\'a}n and others},
+  journal={Advances in Methods and Practices in Psychological Science},
+  volume={1},
+  number={4},
+  pages={443--490},
+  year={2018},
+  publisher={Sage Publications Sage CA: Los Angeles, CA}
+}
+
+@article{aguinis2011best,
+  title={Best-practice recommendations for estimating interaction effects using meta-analysis},
+  author={Aguinis, Herman and Gottfredson, Ryan K and Wright, Thomas A},
+  journal={Journal of Organizational Behavior},
+  volume={32},
+  number={8},
+  pages={1033--1043},
+  year={2011},
+  publisher={Wiley Online Library}
+}
+
+@article{bonett2010varying,
+  title={Varying coefficient meta-analytic methods for alpha reliability.},
+  author={Bonett, Douglas G},
+  journal={Psychological methods},
+  volume={15},
+  number={4},
+  pages={368},
+  year={2010},
+  publisher={American Psychological Association}
+}
+@article{macdonald2003performance,
+  title={Performance variability is related to change in cognition: evidence from the Victoria Longitudinal Study.},
+  author={MacDonald, Stuart WS and Hultsch, David F and Dixon, Roger A},
+  journal={Psychology and aging},
+  volume={18},
+  number={3},
+  pages={510},
+  year={2003},
+  publisher={American Psychological Association}
+}
+
+@misc{vasishth2019embrace,
+  title={How to embrace variation and accept uncertainty in linguistic and psycholinguistic data},
+  author={Vasishth, Shravan and Gelman, Andrew},
+  year={2019},
+  publisher={PsyArXiv}
+}
+
+@incollection{gelman2019ethics,
+  title={Ethics in statistical practice and communication: Five recommendations},
+  author={Gelman, Andrew},
+  booktitle={The Best Writing on Mathematics 2019},
+  pages={214--223},
+  year={2019},
+  publisher={Princeton University Press}
+}
+
+@article{hedges1992meta,
+  title={Meta-analysis},
+  author={Hedges, Larry V},
+  journal={Journal of Educational Statistics},
+  volume={17},
+  number={4},
+  pages={279--296},
+  year={1992},
+  publisher={Sage Publications Sage CA: Los Angeles, CA}
+}
+
+@article{bowater2013heterogeneity,
+  title={Heterogeneity and study size in random-effects meta-analysis},
+  author={Bowater, Russell J and Escarela, Gabriel},
+  journal={Journal of Applied Statistics},
+  volume={40},
+  number={1},
+  pages={2--16},
+  year={2013},
+  publisher={Taylor \& Francis}
+}
+
+@article{thompson2020group,
+  title={A group-specific prior distribution for effect-size heterogeneity in meta-analysis},
+  author={Thompson, Christopher G and Becker, Betsy Jane},
+  journal={Behavior research methods},
+  pages={1--11},
+  year={2020},
+  publisher={Springer}
+}
+
+@article{rover2020bayesian,
+  title={Bayesian random-effects meta-analysis using the bayesmeta R package},
+  author={R{\"o}ver, Christian},
+  journal={Journal of Statistical Software},
+  volume={93},
+  number={6},
+  pages={1--51},
+  year={2020}
+}
+
+@article{raudenbush1985empirical,
+  title={Empirical Bayes meta-analysis},
+  author={Raudenbush, Stephen W and Bryk, Anthony S},
+  journal={Journal of educational statistics},
+  volume={10},
+  number={2},
+  pages={75--98},
+  year={1985},
+  publisher={Sage Publications Sage CA: Los Angeles, CA}
+}
+
+@article{borenstein2007meta,
+  title={Meta-analysis: Fixed effect vs. random effects},
+  author={Borenstein, Michael and Hedges, Larry and Rothstein, Hannah},
+  journal={Meta-analysis. com},
+  year={2007}
+}
+
+@article{rubio2020testing,
+  title={Testing categorical moderators in mixed-effects meta-analysis in the presence of heteroscedasticity},
+  author={Rubio-Aparicio, Mar{\'\i}a and L{\'o}pez-L{\'o}pez, Jos{\'e} Antonio and Viechtbauer, Wolfgang and Mar{\'\i}n-Mart{\'\i}nez, Fulgencio and Botella, Juan and S{\'a}nchez-Meca, Julio},
+  journal={The Journal of Experimental Education},
+  volume={88},
+  number={2},
+  pages={288--310},
+  year={2020},
+  publisher={Taylor \& Francis}
+}
+
+@article{lee2006double,
+  title={Double hierarchical generalized linear models (with discussion)},
+  author={Lee, Youngjo and Nelder, John A},
+  journal={Journal of the Royal Statistical Society: Series C (Applied Statistics)},
+  volume={55},
+  number={2},
+  pages={139--185},
+  year={2006},
+  publisher={Wiley Online Library}
+}
+
+@article{gelman2020bayesian,
+  title={Bayesian workflow},
+  author={Gelman, Andrew and Vehtari, Aki and Simpson, Daniel and Margossian, Charles C and Carpenter, Bob and Yao, Yuling and Kennedy, Lauren and Gabry, Jonah and B{\"u}rkner, Paul-Christian and Modr{\'a}k, Martin},
+  journal={arXiv preprint arXiv:2011.01808},
+  year={2020}
+}
+
+@book{hoff2009first,
+  title={A first course in Bayesian statistical methods},
+  author={Hoff, Peter D},
+  volume={580},
+  year={2009},
+  publisher={Springer}
+}
+
+@article{nagashima2019prediction,
+  title={Prediction intervals for random-effects meta-analysis: A confidence distribution approach},
+  author={Nagashima, Kengo and Noma, Hisashi and Furukawa, Toshi A},
+  journal={Statistical methods in medical research},
+  volume={28},
+  number={6},
+  pages={1689--1702},
+  year={2019},
+  publisher={SAGE Publications Sage UK: London, England}
+}
+
+@article{elliot2007color,
+  title={Color and psychological functioning: the effect of red on performance attainment.},
+  author={Elliot, Andrew J and Maier, Markus A and Moller, Arlen C and Friedman, Ron and Meinhardt, J{\"o}rg},
+  journal={Journal of experimental psychology: General},
+  volume={136},
+  number={1},
+  pages={154},
+  year={2007},
+  publisher={American Psychological Association}
+}
+
+@article{gnambs2020limited,
+  title={Limited evidence for the effect of red color on cognitive performance: A meta-analysis},
+  author={Gnambs, Timo},
+  journal={Psychonomic bulletin \& review},
+  volume={27},
+  number={6},
+  pages={1374--1382},
+  year={2020},
+  publisher={Springer}
+}
+@article{larsson2015seeing,
+  title={Seeing red? The effect of colour on intelligence test performance},
+  author={Larsson, Emma EC and Von Stumm, Sophie},
+  journal={Intelligence},
+  volume={48},
+  pages={133--136},
+  year={2015},
+  publisher={Elsevier}
+}
+@article{gnambs2015effect,
+  title={The effect of the color red on encoding and retrieval of declarative knowledge},
+  author={Gnambs, Timo and Appel, Markus and Kaspar, Kai},
+  journal={Learning and Individual Differences},
+  volume={42},
+  pages={90--96},
+  year={2015},
+  publisher={Elsevier}
+}
+@article{bowater2013heterogeneity,
+  title={Heterogeneity and study size in random-effects meta-analysis},
+  author={Bowater, Russell J and Escarela, Gabriel},
+  journal={Journal of Applied Statistics},
+  volume={40},
+  number={1},
+  pages={2--16},
+  year={2013},
+  publisher={Taylor \& Francis}
+}
+
+@article{quillian2019some,
+  title={Do some countries discriminate more than others? Evidence from 97 field experiments of racial discrimination in hiring},
+  author={Quillian, Lincoln and Heath, Anthony and Pager, Devah and Midtb{\o}en, Arnfinn H and Fleischmann, Fenella and Hexel, Ole},
+  journal={Sociological Science},
+  volume={6},
+  pages={467--496},
+  year={2019}
+}
